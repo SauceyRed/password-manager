@@ -37,8 +37,11 @@ int main()
             std::cout << "Password: ";
             std::cin >> password;
 
+            /*
             std::ifstream databaseFile("database.json");
             nlohmann::json data = nlohmann::json::parse(databaseFile);
+            */
+           
             /*
             if (data.contains(websiteURL) && data.at(websiteURL) == username) {
                 std::string choice;
