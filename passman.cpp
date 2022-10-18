@@ -3,7 +3,9 @@
 #include <filesystem>
 #include <algorithm>
 #include <stdio.h>
+#include <vector>
 #include "sqlite3.h"
+#include "passgen.h"
 
 class Credentials {
     public:
@@ -15,7 +17,8 @@ class Credentials {
 void executeAction();
 void menu();
 void addCredentials();
-static int callback();
+
+// static int callback();
 
 int main()
 {
@@ -33,11 +36,19 @@ void executeAction(std::string selectedOption)
     } else if (selectedOption == "3")
     {
         std::cout << "Option 3\n";
+    } else if (selectedOption == "4")
+    {
+        int inputLen;
+        std::cout << "Input password length: ";
+        std::cin >> inputLen;
+
+        std::cout << genPass() << std::endl;
+        std::cin;
     } else
     {
         std::cout << "Invalid input";
     }    
-    menu();
+    return;
 }
 
 void menu()
@@ -49,23 +60,23 @@ void menu()
         std::cin >> selectedOption;
         if (selectedOption == "1" || selectedOption == "2" || selectedOption == "3") {
             std::cout << "selected option is good" << std::endl;
-            break;
         } else if (selectedOption == "exit")
         {
             exit(0);
-        }
-        
-        std::cout << "selected option is invalid" << std::endl;
+        } else {
+			std::cout << "selected option is invalid" << std::endl;
+		}
+		executeAction(selectedOption);
     }
-    executeAction(selectedOption);
 }
 
 void addCredentials()
 {
     Credentials newCredentials;
 
-    bool randomPassGen = false;
+    // bool randomPassGen = false;
 
+	/*
     sqlite3 *db;
     sqlite3_stmt * st;
     int id = 0;
@@ -102,6 +113,7 @@ void addCredentials()
     } else {
         fprintf(stderr, "Opened database successfully\n");
     }
+    */
 
     std::cout << "Website URL: ";
     std::cin >> newCredentials.websiteURL;
@@ -112,6 +124,7 @@ void addCredentials()
     std::cout << "Password: ";
     std::cin >> newCredentials.password;
 
+	/*
     std::string sql = "INSERT INTO passwords (ID,title,password) VALUES (?,?,?)";
 
     if(sqlite3_open("pw.db", &db) == SQLITE_OK)
@@ -122,13 +135,14 @@ void addCredentials()
         sqlite3_bind_text(st, 3, newCredentials.password.c_str(), newCredentials.password.length(), SQLITE_TRANSIENT);
         sqlite3_step( st );
     }  
+    */
 
    std::cout << "Credentials added!\n";
    std::cout << newCredentials.websiteURL << std::endl << newCredentials.username << std::endl << newCredentials.password << std::endl;
 
-   menu();
+   return;
 }
-
+/*
 static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
    int i;
    for(i = 0; i<argc; i++) {
@@ -137,3 +151,4 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
    printf("\n");
    return 0;
 }
+*/
