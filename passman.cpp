@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <vector>
 #include "sqlite3.h"
-#include "passgen.h"
 
 class Credentials {
     public:
@@ -17,6 +16,7 @@ class Credentials {
 void executeAction();
 void menu();
 void addCredentials();
+std::string genPass(int length = 16);
 
 // static int callback();
 
@@ -42,8 +42,10 @@ void executeAction(std::string selectedOption)
         std::cout << "Input password length: ";
         std::cin >> inputLen;
 
-        std::cout << genPass() << std::endl;
-        std::cin;
+        std::cout << genPass(inputLen) << std::endl;
+        std::string inpWait;
+        std::cin >> inpWait;
+
     } else
     {
         std::cout << "Invalid input";
@@ -58,7 +60,7 @@ void menu()
         std::cout << "---------- Password Manager ----------\nOptions:\n1. Get credentials\n2. Add credentials\n3. Remove credentials\nType \'exit\' to exit the program.\n";
         std::cout << "> ";
         std::cin >> selectedOption;
-        if (selectedOption == "1" || selectedOption == "2" || selectedOption == "3") {
+        if (selectedOption == "1" || selectedOption == "2" || selectedOption == "3" || selectedOption == "4") {
             std::cout << "selected option is good" << std::endl;
         } else if (selectedOption == "exit")
         {
@@ -152,3 +154,22 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
    return 0;
 }
 */
+
+std::string genPass(int length)
+{
+	std::string passwd;
+    const std::string letters{"abcdefghijklmnopqrstuvwxyz"};
+    const std::string numbers{"123456789"};
+    const std::string symbols{"!$%&/()=?^{[]}~@#+-"};
+
+    const std::string allChars{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789!$%&/()=?^{[]}~@#+-"};
+    
+    srand((unsigned) time(0));
+    for (int i = 0; i < length; i++)
+    {
+        int randNum = rand() % allChars.length();
+        passwd.append(1, allChars[randNum]);
+    }
+
+    return passwd;
+}
