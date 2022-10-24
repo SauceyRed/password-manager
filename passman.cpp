@@ -13,8 +13,7 @@ class Credentials {
         std::string password;
 };
 
-void executeAction();
-void menu();
+void executeAction(std::string selectedOption);
 void addCredentials();
 std::string genPass(int length = 16);
 
@@ -22,7 +21,26 @@ std::string genPass(int length = 16);
 
 int main()
 {
-    menu();
+    std::string selectedOption;
+    while (true) {
+        std::cout << "---------- Password Manager ----------\nOptions:\n1. Get credentials\n"
+                    "2. Add credentials\n3. Remove credentials\n4. Generate password\n"
+                    "Type \"exit\" to exit   the program.\n";
+        std::cout << "> ";
+        std::cin >> selectedOption;
+        if (selectedOption == "1" || selectedOption == "2" ||
+            selectedOption == "3" || selectedOption == "4") {
+
+            std::cout << "selected option is good" << std::endl;
+        
+        } else if (selectedOption == "exit")
+        {
+            exit(0);
+        } else {
+			std::cout << "selected option is invalid" << std::endl;
+		}
+		executeAction(selectedOption);
+    }
 }
 
 void executeAction(std::string selectedOption)
@@ -39,12 +57,22 @@ void executeAction(std::string selectedOption)
     } else if (selectedOption == "4")
     {
         int inputLen;
+        char genNewPass = 'y';
         std::cout << "Input password length: ";
         std::cin >> inputLen;
 
         std::cout << genPass(inputLen) << std::endl;
-        std::string inpWait;
-        std::cin >> inpWait;
+        
+        while (std::tolower(genNewPass) == 'y') {
+            std::cout << "Generate new password? (y/N): ";
+            std::cin >> genNewPass;
+
+            if (std::tolower(genNewPass) == 'y')
+            {
+                std::cout << genPass(inputLen) << std::endl;
+            }
+        }
+        return;
 
     } else
     {
@@ -53,30 +81,46 @@ void executeAction(std::string selectedOption)
     return;
 }
 
-void menu()
-{
-    std::string selectedOption;
-    while (true) {
-        std::cout << "---------- Password Manager ----------\nOptions:\n1. Get credentials\n2. Add credentials\n3. Remove credentials\nType \'exit\' to exit the program.\n";
-        std::cout << "> ";
-        std::cin >> selectedOption;
-        if (selectedOption == "1" || selectedOption == "2" || selectedOption == "3" || selectedOption == "4") {
-            std::cout << "selected option is good" << std::endl;
-        } else if (selectedOption == "exit")
-        {
-            exit(0);
-        } else {
-			std::cout << "selected option is invalid" << std::endl;
-		}
-		executeAction(selectedOption);
-    }
-}
-
 void addCredentials()
 {
     Credentials newCredentials;
 
-    // bool randomPassGen = false;
+    bool randomPassGen = false;
+
+    sqlite3* db;
+    int exit = 0;
+    exit = sqlite3_open("credentials.db", &db);
+
+    if (exit) {
+        std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
+        return;
+    }
+
+    std::string sql = "CREATE TABLE credentials("
+                        "WEBSITE_URL TEXT NOT NULL, "
+                        "USERNAME TEXT NOT NULL, "
+                        "PASSWORD TEXT NOT NULL);";
+
+    char* msgErr;
+    exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &msgErr);
+
+    if (exit != SQLITE_OK) {
+        std::cerr << "Error creating table!" << std::endl;
+        sqlite3_free(msgErr);
+    } else {
+        std::cout << "Table created successfully!" << std::endl;
+    }
+
+    // sqlite3_prepare_v2(db, sql.c_str(), NULL)
+
+    std::cout << "Website U<dRL: ";
+    std::cin >> newCredentials.websiteURL;
+    
+    std::cout << "Username/email: ";
+    std::cin >> newCredentials.username;
+
+    std::cout << "Password: ";
+    std::cin >> newCredentials.password;
 
 	/*
     sqlite3 *db;
@@ -117,15 +161,6 @@ void addCredentials()
     }
     */
 
-    std::cout << "Website URL: ";
-    std::cin >> newCredentials.websiteURL;
-    
-    std::cout << "Username/email: ";
-    std::cin >> newCredentials.username;
-
-    std::cout << "Password: ";
-    std::cin >> newCredentials.password;
-
 	/*
     std::string sql = "INSERT INTO passwords (ID,title,password) VALUES (?,?,?)";
 
@@ -138,6 +173,8 @@ void addCredentials()
         sqlite3_step( st );
     }  
     */
+
+    sqlite3_close(db);
 
    std::cout << "Credentials added!\n";
    std::cout << newCredentials.websiteURL << std::endl << newCredentials.username << std::endl << newCredentials.password << std::endl;
