@@ -1,10 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
-#include <algorithm>
 #include <stdio.h>
 #include <vector>
-#include "sqlite3.h"
+#include <sqlite3.h>
 
 class Credentials {
     public:
@@ -15,12 +14,38 @@ class Credentials {
 
 void executeAction(std::string selectedOption);
 void addCredentials();
+Credentials getCredentials(std::string websiteURL);
 std::string genPass(int length = 16);
 
-// static int callback();
+sqlite3* db;
+sqlite3_stmt* stmt;
+char* msgErr;
+std::string sql;
+int sqlExit = 0;
 
 int main()
 {
+    sqlExit = sqlite3_open("credentials.db", &db);
+
+    if (sqlExit) {
+        std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
+        exit(0);
+    }
+
+    sql = "CREATE TABLE IF NOT EXISTS credentials("
+            "WEBSITE_URL TEXT NOT NULL, "
+            "USERNAME TEXT NOT NULL, "
+            "PASSWORD TEXT NOT NULL);";
+
+    sqlExit = sqlite3_exec(db, sql.c_str(), NULL, 0, &msgErr);
+
+    if (sqlExit != SQLITE_OK) {
+        std::cerr << "Error creating table!" << std::endl;
+        sqlite3_free(msgErr);
+    } else {
+        std::cout << "Table created successfully or already existed!" << std::endl;
+    }
+
     std::string selectedOption;
     while (true) {
         std::cout << "---------- Password Manager ----------\nOptions:\n1. Get credentials\n"
@@ -47,7 +72,13 @@ void executeAction(std::string selectedOption)
 {
     if (selectedOption == "1")
     {
-        std::cout << "Option 1\n";
+        std::string websiteURL;
+        std::cout << "Input website to retrieve credentials for: ";
+        std::cin >> websiteURL;
+        Credentials credentials = getCredentials(websiteURL);
+        std::cout << "Website URL: " << credentials.websiteURL << std::endl;
+        std::cout << "Email/username: " << credentials.username << std::endl;
+        std::cout << "Password: " << credentials.password << std::endl;
     } else if (selectedOption == "2")
     {
         addCredentials();
@@ -87,33 +118,14 @@ void addCredentials()
 
     bool randomPassGen = false;
 
-    sqlite3* db;
-    int exit = 0;
-    exit = sqlite3_open("credentials.db", &db);
+    sqlExit = sqlite3_open("credentials.db", &db);
 
-    if (exit) {
+    if (sqlExit) {
         std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
-        return;
+        exit(0);
     }
 
-    std::string sql = "CREATE TABLE credentials("
-                        "WEBSITE_URL TEXT NOT NULL, "
-                        "USERNAME TEXT NOT NULL, "
-                        "PASSWORD TEXT NOT NULL);";
-
-    char* msgErr;
-    exit = sqlite3_exec(db, sql.c_str(), NULL, 0, &msgErr);
-
-    if (exit != SQLITE_OK) {
-        std::cerr << "Error creating table!" << std::endl;
-        sqlite3_free(msgErr);
-    } else {
-        std::cout << "Table created successfully!" << std::endl;
-    }
-
-    // sqlite3_prepare_v2(db, sql.c_str(), NULL)
-
-    std::cout << "Website U<dRL: ";
+    std::cout << "Website URL: ";
     std::cin >> newCredentials.websiteURL;
     
     std::cout << "Username/email: ";
@@ -122,79 +134,65 @@ void addCredentials()
     std::cout << "Password: ";
     std::cin >> newCredentials.password;
 
-	/*
-    sqlite3 *db;
-    sqlite3_stmt * st;
-    int id = 0;
-    char *zErrMsg = 0;
-    int rc;
+    sql = "INSERT INTO credentials VALUES (?,?,?)";
 
-    if (!std::filesystem::exists("credentials.db")) {
-        std::cout << "credentials.db does not exist, creating...\n";
-        
-        rc = sqlite3_open("credentials.db", &db);
-        
-        if (rc) {
-            fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-            menu();
-        } else {
-            fprintf(stderr, "Opened database successfully\n");
-        }
+    sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, nullptr);
 
-        std::string sql = "CREATE TABLE credentials("
-                            "WEBSITE_URL TEXT NOT NULL, "
-                            "USERNAME TEXT NOT NULL, "
-                            "PASSWORD TEXT NOT NULL);";
+    sqlite3_bind_text(stmt, 1, newCredentials.websiteURL.c_str(), newCredentials.websiteURL.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, newCredentials.username.c_str(), newCredentials.username.length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, newCredentials.password.c_str(), newCredentials.password.length(), SQLITE_STATIC);
 
-        sqlite3_close(db);
+    sqlite3_step(stmt);
 
-        std::cout << "credentials.db successfully created.\n";
-    }
-
-    rc = sqlite3_open("credentials.db", &db);
-    
-    if (rc) {
-        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-        menu();
-    } else {
-        fprintf(stderr, "Opened database successfully\n");
-    }
-    */
-
-	/*
-    std::string sql = "INSERT INTO passwords (ID,title,password) VALUES (?,?,?)";
-
-    if(sqlite3_open("pw.db", &db) == SQLITE_OK)
-    {
-        sqlite3_prepare( db, sql.c_str(), -1 &st, NULL);
-        sqlite3_bind_text(st, 1, newCredentials.websiteURL.c_str(), newCredentials.websiteURL.length(), SQLITE_TRANSIENT);
-        sqlite3_bind_text(st, 2, newCredentials.username.c_str(), newCredentials.username.length(), SQLITE_TRANSIENT);
-        sqlite3_bind_text(st, 3, newCredentials.password.c_str(), newCredentials.password.length(), SQLITE_TRANSIENT);
-        sqlite3_step( st );
-    }  
-    */
+    sqlite3_finalize(stmt);
 
     sqlite3_close(db);
 
-   std::cout << "Credentials added!\n";
-   std::cout << newCredentials.websiteURL << std::endl << newCredentials.username << std::endl << newCredentials.password << std::endl;
+    std::cout << "Credentials added!\n";
+    std::cout << newCredentials.websiteURL << std::endl << newCredentials.username << std::endl << newCredentials.password << std::endl;
 
-   return;
+    return;
 }
-/*
-static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
-   int i;
-   for(i = 0; i<argc; i++) {
-      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-   }
-   printf("\n");
-   return 0;
+
+Credentials getCredentials(std::string websiteURL)
+{
+    sqlExit = sqlite3_open("credentials.db", &db);
+
+    if (sqlExit) {
+        std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
+        exit(0);
+    }
+    
+    Credentials credentials;
+    credentials.websiteURL = websiteURL;
+
+    sql = "SELECT * FROM credentials WHERE WEBSITE_URL = ?";
+
+    sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, nullptr);
+
+    sqlite3_bind_text(stmt, 1, websiteURL.c_str(), websiteURL.length(), SQLITE_STATIC);
+
+    sqlite3_step(stmt);
+
+    for (int i = 0; i < sqlite3_column_count(stmt); i++)
+    {
+        if (i == 1)
+        {
+            credentials.username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
+        } else if (i == 2)
+        {
+            credentials.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
+        }
+    }
+
+    sqlite3_finalize(stmt);
+
+    return credentials;
 }
-*/
 
 std::string genPass(int length)
 {
-	std::string passwd;
+	std::string password;
     const std::string letters{"abcdefghijklmnopqrstuvwxyz"};
     const std::string numbers{"123456789"};
     const std::string symbols{"!$%&/()=?^{[]}~@#+-"};
@@ -205,8 +203,8 @@ std::string genPass(int length)
     for (int i = 0; i < length; i++)
     {
         int randNum = rand() % allChars.length();
-        passwd.append(1, allChars[randNum]);
+        password.append(1, allChars[randNum]);
     }
 
-    return passwd;
+    return password;
 }
