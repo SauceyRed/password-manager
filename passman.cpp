@@ -10,11 +10,14 @@ class Credentials {
         std::string websiteURL;
         std::string username;
         std::string password;
+        bool exists;
 };
 
 void executeAction(std::string selectedOption);
 void addCredentials();
 Credentials getCredentials(std::string websiteURL);
+std::vector<Credentials> getAllCredentials();
+void listCredentials();
 std::string genPass(int length = 16);
 
 sqlite3* db;
@@ -50,11 +53,13 @@ int main()
     while (true) {
         std::cout << "---------- Password Manager ----------\nOptions:\n1. Get credentials\n"
                     "2. Add credentials\n3. Remove credentials\n4. Generate password\n"
-                    "Type \"exit\" to exit   the program.\n";
+                    "5. List all credentials\n"
+                    "Type \"exit\" to exit the program.\n";
         std::cout << "> ";
         std::cin >> selectedOption;
         if (selectedOption == "1" || selectedOption == "2" ||
-            selectedOption == "3" || selectedOption == "4") {
+            selectedOption == "3" || selectedOption == "4" ||
+            selectedOption == "5") {
 
             std::cout << "selected option is good" << std::endl;
         
@@ -76,6 +81,11 @@ void executeAction(std::string selectedOption)
         std::cout << "Input website to retrieve credentials for: ";
         std::cin >> websiteURL;
         Credentials credentials = getCredentials(websiteURL);
+        if (!credentials.exists)
+        {
+            std::cout << "Website URL not found in database!" << std::endl;
+            return;
+        }
         std::cout << "Website URL: " << credentials.websiteURL << std::endl;
         std::cout << "Email/username: " << credentials.username << std::endl;
         std::cout << "Password: " << credentials.password << std::endl;
@@ -92,19 +102,29 @@ void executeAction(std::string selectedOption)
         std::cout << "Input password length: ";
         std::cin >> inputLen;
 
+        std::cout << "hello" << std::endl;
+
         std::cout << genPass(inputLen) << std::endl;
         
+        std::cout << "hello 2" << std::endl;
+
         while (std::tolower(genNewPass) == 'y') {
-            std::cout << "Generate new password? (y/N): ";
+            std::cout << "hello 3" << std::endl;
+            std::cout << "Generate new password? (y/n): ";
             std::cin >> genNewPass;
+            std::cout << std::endl << "hello 4" << std::endl;
 
             if (std::tolower(genNewPass) == 'y')
             {
+                std::cout << "hello 5" << std::endl;
                 std::cout << genPass(inputLen) << std::endl;
+                std::cout << "hello 6" << std::endl;
             }
         }
         return;
 
+    } else if (selectedOption == "5") {
+        //
     } else
     {
         std::cout << "Invalid input";
@@ -172,22 +192,61 @@ Credentials getCredentials(std::string websiteURL)
 
     sqlite3_bind_text(stmt, 1, websiteURL.c_str(), websiteURL.length(), SQLITE_STATIC);
 
-    sqlite3_step(stmt);
+    int rows = sqlite3_step(stmt);
 
-    for (int i = 0; i < sqlite3_column_count(stmt); i++)
+    if (rows == SQLITE_DONE)
     {
-        if (i == 1)
+        credentials.exists = false;
+    } else {
+        credentials.exists = true;
+    }
+
+    if (credentials.exists)
+    {
+        for (int i = 0; i < sqlite3_column_count(stmt); i++)
         {
-            credentials.username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
-        } else if (i == 2)
-        {
-            credentials.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
+            if (i == 1)
+            {
+                credentials.username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
+            } else if (i == 2)
+            {
+                credentials.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
+            }
         }
     }
 
     sqlite3_finalize(stmt);
 
     return credentials;
+}
+
+std::vector<Credentials> getAllCredentials()
+{
+    std::vector<Credentials> credentialsList;
+    std::string sql = "SELECT * FROM credentials";
+    
+    sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, nullptr);
+
+    int rows;
+
+    while (true)
+    {
+        rows = sqlite3_step(stmt);
+
+        if (rows == SQLITE_DONE) { break; }
+
+        Credentials credentials;
+        credentials.websiteURL = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        credentials.username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        credentials.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+    }
+
+    return credentialsList;
+}
+
+void listCredentials()
+{
+    std::vector<Credentials> credentialsList = getAllCredentials();
 }
 
 std::string genPass(int length)
