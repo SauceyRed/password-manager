@@ -15,9 +15,8 @@ class Credentials {
 
 void executeAction(std::string selectedOption);
 void addCredentials();
-void removeCredentials();
 Credentials getCredentials(std::string websiteURL);
-std::vector<std::string> getAllWebsites();
+std::vector<Credentials> getAllCredentials();
 void listCredentials();
 std::string genPass(int length = 16);
 
@@ -95,7 +94,7 @@ void executeAction(std::string selectedOption)
         addCredentials();
     } else if (selectedOption == "3")
     {
-        removeCredentials();
+        std::cout << "Option 3\n";
     } else if (selectedOption == "4")
     {
         int inputLen;
@@ -125,7 +124,7 @@ void executeAction(std::string selectedOption)
         return;
 
     } else if (selectedOption == "5") {
-        listCredentials();
+        //
     } else
     {
         std::cout << "Invalid input";
@@ -139,16 +138,12 @@ void addCredentials()
 
     bool randomPassGen = false;
 
-    std::cout << "add1" << std::endl;
-
     sqlExit = sqlite3_open("credentials.db", &db);
 
     if (sqlExit) {
         std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
         exit(0);
     }
-
-    std::cout << "add2" << std::endl;
 
     std::cout << "Website URL: ";
     std::cin >> newCredentials.websiteURL;
@@ -161,92 +156,20 @@ void addCredentials()
 
     sql = "INSERT INTO credentials VALUES (?,?,?)";
 
-    std::cout << "add3" << std::endl;
-
     sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, nullptr);
 
     sqlite3_bind_text(stmt, 1, newCredentials.websiteURL.c_str(), newCredentials.websiteURL.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, newCredentials.username.c_str(), newCredentials.username.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 3, newCredentials.password.c_str(), newCredentials.password.length(), SQLITE_STATIC);
 
-    std::cout << "add4" << std::endl;
-
     sqlite3_step(stmt);
-
-    std::cout << "add5" << std::endl;
 
     sqlite3_finalize(stmt);
 
-    std::cout << "add6" << std::endl;
+    sqlite3_close(db);
 
     std::cout << "Credentials added!\n";
     std::cout << newCredentials.websiteURL << std::endl << newCredentials.username << std::endl << newCredentials.password << std::endl;
-
-    return;
-}
-
-void removeCredentials()
-{
-    bool websiteInDB;
-
-    sqlite3_stmt* rem_stmt;
-
-    std::cout << "rem1" << std::endl;
-
-    std::string websiteURL;
-    std::cout << "Website URL: ";
-    std::cin >> websiteURL;
-
-    sql = "SELECT * FROM credentials WHERE WEBSITE_URL = ?";
-
-    sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, nullptr);
-
-    std::cout << "rem2" << std::endl;
-
-    sqlite3_bind_text(stmt, 1, websiteURL.c_str(), websiteURL.length(), SQLITE_STATIC);
-
-    int rows = sqlite3_step(stmt);
-
-    std::cout << "rem3" << std::endl;
-
-    if (rows == SQLITE_DONE)
-    {
-        websiteInDB = false;
-    } else {
-        websiteInDB = true;
-    }
-
-    std::cout << "rem4" << std::endl;
-
-    if (websiteInDB)
-    {
-        std::cout << "rem5" << std::endl;
-        while (true)
-        {
-            std::cout << "rem6" << std::endl;
-            // std::cout << reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)) << std::endl;;
-
-            sql = "DELETE FROM credentials WHERE WEBSITE_URL = ?";
-
-            sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &rem_stmt, nullptr);
-
-            std::cout << "rem7" << std::endl;
-
-            sqlite3_bind_text(rem_stmt, 1, websiteURL.c_str(), websiteURL.length(), SQLITE_STATIC);
-
-            std::cout << "rem8" << std::endl;
-
-            sqlite3_step(rem_stmt);
-
-            std::cout << "rem9" << std::endl;
-
-            if (rows == SQLITE_DONE) { std::cout << "hello 3" << std::endl; break; }
-            
-            rows = sqlite3_step(stmt);
-        }
-    }
-
-    sqlite3_finalize(stmt);
 
     return;
 }
@@ -297,10 +220,10 @@ Credentials getCredentials(std::string websiteURL)
     return credentials;
 }
 
-std::vector<std::string> getAllWebsites()
+std::vector<Credentials> getAllCredentials()
 {
-    std::vector<std::string> websitesList;
-    sql = "SELECT * FROM credentials";
+    std::vector<Credentials> credentialsList;
+    std::string sql = "SELECT * FROM credentials";
     
     sqlite3_prepare_v2(db, sql.c_str(), sql.length(), &stmt, nullptr);
 
@@ -311,27 +234,19 @@ std::vector<std::string> getAllWebsites()
         rows = sqlite3_step(stmt);
 
         if (rows == SQLITE_DONE) { break; }
-        
-        websitesList.emplace_back(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)));
+
+        Credentials credentials;
+        credentials.websiteURL = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        credentials.username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        credentials.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
     }
 
-    sqlite3_finalize(stmt);
-
-    return websitesList;
+    return credentialsList;
 }
 
 void listCredentials()
 {
-    std::vector<std::string> websitesList = getAllWebsites();
-
-    std::cout << "---------- All Websites ----------" << std::endl;
-
-    for (int i = 0; i < websitesList.size(); i++)
-    {
-        std::cout << websitesList[i] << std::endl;
-    }
-
-    return;
+    std::vector<Credentials> credentialsList = getAllCredentials();
 }
 
 std::string genPass(int length)
