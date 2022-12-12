@@ -1,9 +1,13 @@
+#include "crypto_scrypt.h"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <stdio.h>
+#include <sys/types.h>
 #include <vector>
 #include <sqlite3.h>
+#include <sys/random.h>
+#include <crypt.h>
 
 class Credentials {
     public:
@@ -20,6 +24,7 @@ Credentials getCredentials(std::string websiteURL);
 std::vector<std::string> getAllWebsites();
 void listCredentials();
 std::string genPass(int length = 16);
+std::string securePass(std::string password);
 
 sqlite3* db;
 sqlite3_stmt* stmt;
@@ -72,6 +77,7 @@ int main()
 		}
 		executeAction(selectedOption);
     }
+    return 0;
 }
 
 void executeAction(std::string selectedOption)
@@ -351,4 +357,10 @@ std::string genPass(int length)
     }
 
     return password;
+}
+
+std::string securePass(std::string password)
+{
+    
+    crypto_scrypt(password, password.length(), salt, salt.length(), uint64_t, uint32_t, uint32_t, uint8_t *, size_t)
 }
