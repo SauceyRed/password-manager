@@ -1,12 +1,9 @@
-#include "crypto_scrypt.h"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <stdio.h>
-#include <sys/types.h>
 #include <vector>
 #include <sqlite3.h>
-#include <sys/random.h>
 #include <crypt.h>
 
 class Credentials {
@@ -357,10 +354,4 @@ std::string genPass(int length)
     }
 
     return password;
-}
-
-std::string securePass(std::string password)
-{
-    
-    crypto_scrypt(password, password.length(), salt, salt.length(), uint64_t, uint32_t, uint32_t, uint8_t *, size_t)
 }
