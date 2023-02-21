@@ -93,6 +93,7 @@ void executeAction(std::string selectedOption)
             std::cout << "Website URL not found in database!" << std::endl;
             return;
         }
+        std::cout << "---------- Retrieved Credentials ----------" << std::endl;
         std::cout << "Website URL: " << credentials.websiteURL << std::endl;
         std::cout << "Email/username: " << credentials.username << std::endl;
         std::cout << "Password: " << credentials.password << std::endl;
@@ -359,8 +360,10 @@ std::string genPass(int length)
     return password;
 }
 
+/*
 std::string securePass(std::string password)
 {
     
     crypto_scrypt(password, password.length(), salt, salt.length(), uint64_t, uint32_t, uint32_t, uint8_t *, size_t)
 }
+*/
